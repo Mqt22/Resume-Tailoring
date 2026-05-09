@@ -1,0 +1,283 @@
+{
+  "name": "Resume Tailoring",
+  "nodes": [
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "07fa9c80-383e-4618-9a64-31fdcd8793c7",
+              "leftValue": "={{ $binary.file.mimeType}}",
+              "rightValue": "pdf",
+              "operator": {
+                "type": "string",
+                "operation": "contains"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        208,
+        48
+      ],
+      "id": "87d93c81-c3b2-4ad4-9e8f-e8ab6205ecf9",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "operation": "pdf",
+        "binaryPropertyName": "file",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1.1,
+      "position": [
+        448,
+        32
+      ],
+      "id": "0dd9ff0d-12a0-4707-a14c-d94ac2a4a7d9",
+      "name": "Extract from File"
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "12312323",
+        "contextWindowLength": 10
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [
+        768,
+        304
+      ],
+      "id": "42f512d3-2e24-402e-852b-aab3c4d09752",
+      "name": "Simple Memory"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Compare this resume with this job description.\nRewrite the resume bullets to better match the job.\nKeep information truthful.\nAdd missing keywords naturally.\n\nRESUME CONTENT:\n{{ $node[\"Extract from File\"].json[\"text\"] }}\n\nJOB DESCRIPTION:\n{{ $('Cv Uploader').item.json.body.jobDescription }}\n\nOutput the final resume using clean HTML tags (like <h1>, <h2>, <p>, and <ul>) instead of Markdown. Do not include <html> or <body> tags, just the inner content.",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        672,
+        32
+      ],
+      "id": "36265925-b7ef-45de-9603-a1c4d0cf3b66",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "upload",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        0,
+        48
+      ],
+      "id": "da1b3b04-9127-4e12-8e53-c663b8429298",
+      "name": "Cv Uploader",
+      "webhookId": "93240a63-99c7-460c-b9a6-ef59de7e2e8a"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "d46faaab-b8fe-4832-b99a-b159af08e9cd",
+              "name": "output",
+              "value": "={{ $json.output }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1024,
+        32
+      ],
+      "id": "b9e42b6c-92f7-4ff4-90eb-bd85245caf0e",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "html": "<!DOCTYPE html>\n<html>\n<head>\n<style>\n    body { font-family: 'Helvetica', 'Arial', sans-serif; line-height: 1.5; color: #333; margin: 0; padding: 40px; }\n    h1 { color: #2c3e50; border-bottom: 2px solid #3498db; padding-bottom: 10px; margin-top: 0; }\n    h2 { color: #2980b9; margin-top: 25px; border-bottom: 1px solid #eee; }\n    h3 { color: #444; margin-bottom: 5px; }\n    p { margin: 8px 0; }\n    ul { padding-left: 20px; }\n    li { margin-bottom: 5px; }\n    .header-info { font-size: 0.9em; color: #7f8c8d; margin-bottom: 20px; }\n    .skill-tag { background: #f4f4f4; padding: 4px 8px; border-radius: 4px; display: inline-block; margin: 2px; font-size: 0.85em; border: 1px solid #ddd; }\n</style>\n</head>\n<body>\n    {{ $json.output.replace(/\\n/g, '<br>').replace(/### (.*)/g, '<h2>$1</h2>').replace(/\\*\\* (.*)\\*\\*/g, '<strong>$1</strong>') }}\n</body>\n</html>"
+      },
+      "type": "n8n-nodes-base.html",
+      "typeVersion": 1.2,
+      "position": [
+        1232,
+        32
+      ],
+      "id": "a670ecd7-45af-4690-9759-ea1aaa032578",
+      "name": "HTML"
+    },
+    {
+      "parameters": {
+        "html_content": "={{ $json.html }}",
+        "css_content": "=",
+        "output_format": "file"
+      },
+      "type": "n8n-nodes-htmlcsstopdf.htmlcsstopdf",
+      "typeVersion": 1,
+      "position": [
+        1440,
+        32
+      ],
+      "id": "85b8ea05-8305-42b4-8184-c9fea841a7ff",
+      "name": "Convert HTML to PDF",
+      "credentials": {
+        "htmlcsstopdfApi": {
+          "id": "QULSSdinEjtP4rwg",
+          "name": "HTML to PDF account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1.1,
+      "position": [
+        544,
+        240
+      ],
+      "id": "c907695a-6cef-4a0f-bef1-560c566ac3b5",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "cii5Va8nxl3nZRYR",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Extract from File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract from File": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simple Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Cv Uploader": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "HTML",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTML": {
+      "main": [
+        [
+          {
+            "node": "Convert HTML to PDF",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Convert HTML to PDF": {
+      "main": [
+        []
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "ed67e4fc-e811-4e77-bc34-2f1b53885eed",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "eb75d540ed21a494da5e73623b6ba005bbdc813b44e31542e46ada68c8599e29"
+  },
+  "id": "PwHphIdixHP9Vds9",
+  "tags": []
+}
